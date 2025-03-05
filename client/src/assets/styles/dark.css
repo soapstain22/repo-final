@@ -1,0 +1,16 @@
+:root {
+  --body-background: #121212;
+  --body-color: #FAFAFA;
+  --primary: #2196F3;
+  --primary-invert: #FAFAFA;
+}
+
+body {
+  background-color: var(--body-background);
+  color: var(--body-color);
+}
+
+.button.is-primary {
+  background-color: var(--primary);
+  color: var(--primary-invert);
+}
