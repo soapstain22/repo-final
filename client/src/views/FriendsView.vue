@@ -1,33 +1,16 @@
 <template>
   <div class="container">
     <h1 class="title">Friends Activities</h1>
-    <table class="table is-fullwidth">
-      <thead>
-        <tr>
-          <th>Friend</th>
-          <th>Activity</th>
-          <th>Date</th>
-          <th>Duration</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>John Doe</td>
-          <td>Running</td>
-          <td>2024-01-01</td>
-          <td>30 minutes</td>
-        </tr>
-        <tr>
-          <td>Jane Smith</td>
-          <td>Swimming</td>
-          <td>2024-01-02</td>
-          <td>45 minutes</td>
-        </tr>
-      </tbody>
-    </table>
+    <FriendActivityList :activities="activities" />
   </div>
 </template>
 
 <script setup lang="ts">
+import FriendActivityList from '../components/FriendActivityList.vue';
+import { ref } from 'vue';
 
+const activities = ref([
+  { id: 1, friend: 'John Doe', name: 'Running', date: '2024-01-01', duration: '30 minutes' },
+  { id: 2, friend: 'Jane Smith', name: 'Swimming', date: '2024-01-02', duration: '45 minutes' },
+]);
 </script>
