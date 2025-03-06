@@ -1,13 +1,11 @@
 <template>
   <div class="container">
     <h1 class="title">Activities</h1>
-    <ActivityList :activities="activities" />
     <button class="button is-primary">Add Activity</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import ActivityList from '../components/ActivityList.vue';
 import { ref } from 'vue';
 
 const activities = ref([

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { OInput, OAutocomplete } from '@oruga-ui/oruga-next'
 </script>
 
 <template>
@@ -10,8 +9,7 @@ import { OInput, OAutocomplete } from '@oruga-ui/oruga-next'
                     <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="30" />
                 </a>
 
-                <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false"
-                   data-target="navbarBasicExample">
+                <a role="button" class="navbar-burger burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
                     <span aria-hidden="true"></span>
                     <span aria-hidden="true"></span>
                     <span aria-hidden="true"></span>
@@ -33,9 +31,6 @@ import { OInput, OAutocomplete } from '@oruga-ui/oruga-next'
                     <RouterLink to="/admin" class="navbar-item">Admin</RouterLink>
                     <RouterLink to="/activities" class="navbar-item">Activities</RouterLink>
                     <RouterLink to="/friends" class="navbar-item">Friends</RouterLink>
-                </div>
-                <div class="navbar-item">
-                  <OAutocomplete placeholder="Search" :data="['Running', 'Swimming', 'Weightlifting']" />
                 </div>
                 <div class="navbar-end">
                     <div class="navbar-item">

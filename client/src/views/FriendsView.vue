@@ -1,12 +1,10 @@
 <template>
   <div class="container">
     <h1 class="title">Friends Activities</h1>
-    <FriendActivityList :activities="activities" />
   </div>
 </template>
 
 <script setup lang="ts">
-import FriendActivityList from '../components/FriendActivityList.vue';
 import { ref } from 'vue';
 
 const activities = ref([

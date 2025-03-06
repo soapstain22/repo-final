@@ -59,9 +59,6 @@ web_modules/
 .eslintcache
 
 # Optional stylelint cache
-.stylelintcache
-
-# Microbundle cache
 .rpt2_cache/
 .rts2_cache_cjs/
 .rts2_cache_es/
@@ -166,5 +163,8 @@ dist
 dist/
 npm-debug.log
 yarn-error.log
+
+# Local .env files
+/.env
 
 # End of https://www.toptal.com/developers/gitignore/api/vuejs,node,visualstudiocode
