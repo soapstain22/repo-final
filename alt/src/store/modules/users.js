@@ -1,5 +1,3 @@
-import { supabase } from '@/services/supabase';
-
 const state = {
   users: [],
   selectedUser: null
@@ -32,19 +30,15 @@ const mutations = {
 };
 
 const actions = {
-  async fetchUsers({ commit }) {
+  async fetchUsers({ commit, rootState }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      commit('SET_USERS', data);
-      
+
+      // In-memory: get all users from auth state
+      const users = rootState.auth.users;
+
+      commit('SET_USERS', users);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -53,21 +47,20 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
-  async fetchUser({ commit }, userId) {
+
+  async fetchUser({ commit, rootState }, userId) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error) throw error;
-      
-      commit('SET_SELECTED_USER', data);
-      
+
+      // In-memory: find user by ID from auth state
+      const user = rootState.auth.users.find(user => user.id === userId);
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      commit('SET_SELECTED_USER', user);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -76,40 +69,25 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
-  async createUser({ commit }, userData) {
+
+  async createUser({ commit, rootState }, userData) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+
+      // In-memory: create new user (add to auth state)
+      const newUser = {
+        id: Math.random().toString(36).substring(2, 15),
         email: userData.email,
         password: userData.password,
-        email_confirm: true
-      });
-      
-      if (authError) throw authError;
-      
-      // Create user profile
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            first_name: userData.firstName,
-            last_name: userData.lastName,
-            email: userData.email,
-            role: userData.role || 'user',
-            created_at: new Date()
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      commit('ADD_USER', data);
-      
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role || 'user',
+        created_at: new Date()
+      };
+
+      rootState.auth.users.push(newUser);
+      commit('ADD_USER', newUser);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -118,26 +96,28 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
-  async updateUser({ commit }, { userId, userData }) {
+
+  async updateUser({ commit, rootState }, { userId, userData }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          role: userData.role
-        })
-        .eq('id', userId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      commit('UPDATE_USER', data);
-      
+
+      // In-memory: find user by ID and update properties
+      const userIndex = rootState.auth.users.findIndex(user => user.id === userId);
+
+      if (userIndex === -1) {
+        throw new Error('User not found');
+      }
+
+      const updatedUser = {
+        ...rootState.auth.users[userIndex],
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role
+      };
+
+      rootState.auth.users[userIndex] = updatedUser;
+      commit('UPDATE_USER', updatedUser);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -146,26 +126,15 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
-  async deleteUser({ commit }, userId) {
+
+  async deleteUser({ commit, rootState }, userId) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      // Delete user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      
-      if (authError) throw authError;
-      
-      // Delete user profile
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
-      
-      if (error) throw error;
-      
+
+      // In-memory: delete user from auth state
+      rootState.auth.users = rootState.auth.users.filter(user => user.id !== userId);
       commit('REMOVE_USER', userId);
-      
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });

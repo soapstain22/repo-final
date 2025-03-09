@@ -1,10 +1,9 @@
-import { supabase } from '@/services/supabase';
-
 const state = {
   activities: [],
   selectedActivity: null,
   userActivities: [],
-  friendActivities: []
+  friendActivities: [],
+  nextActivityId: 1 // Track the next available activity ID
 };
 
 const getters = {
@@ -28,6 +27,7 @@ const mutations = {
     state.friendActivities = activities;
   },
   ADD_ACTIVITY(state, activity) {
+    activity.id = state.nextActivityId++; // Assign a unique ID
     state.activities.push(activity);
     state.userActivities.push(activity);
   },
@@ -36,7 +36,7 @@ const mutations = {
     if (index !== -1) {
       state.activities.splice(index, 1, updatedActivity);
     }
-    
+
     const userIndex = state.userActivities.findIndex(activity => activity.id === updatedActivity.id);
     if (userIndex !== -1) {
       state.userActivities.splice(userIndex, 1, updatedActivity);
@@ -45,6 +45,9 @@ const mutations = {
   REMOVE_ACTIVITY(state, activityId) {
     state.activities = state.activities.filter(activity => activity.id !== activityId);
     state.userActivities = state.userActivities.filter(activity => activity.id !== activityId);
+  },
+  SET_NEXT_ACTIVITY_ID(state, nextId) {
+    state.nextActivityId = nextId;
   }
 };
 
@@ -52,16 +55,10 @@ const actions = {
   async fetchActivities({ commit }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      commit('SET_ACTIVITIES', data);
-      
+
+      // In-memory: return all activities
+      commit('SET_ACTIVITIES', state.activities);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -70,27 +67,21 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async fetchUserActivities({ commit, rootGetters }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
+
       const userId = rootGetters['auth/currentUser']?.id;
-      
+
       if (!userId) {
         throw new Error('User not authenticated');
       }
-      
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      commit('SET_USER_ACTIVITIES', data);
-      
+
+      // In-memory: filter activities by user ID
+      const userActivities = state.activities.filter(activity => activity.user_id === userId);
+      commit('SET_USER_ACTIVITIES', userActivities);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -99,43 +90,31 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async fetchFriendActivities({ commit, rootGetters }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
+
       const userId = rootGetters['auth/currentUser']?.id;
-      
+
       if (!userId) {
         throw new Error('User not authenticated');
       }
-      
-      // First get user's friends
-      const { data: friendsData, error: friendsError } = await supabase
-        .from('friends')
-        .select('friend_id')
-        .eq('user_id', userId);
-      
-      if (friendsError) throw friendsError;
-      
-      if (!friendsData.length) {
+
+      // In-memory: get user's friends (replace with actual friend data retrieval)
+      const friends = []; // Replace with actual friend data
+
+      if (!friends.length) {
         commit('SET_FRIEND_ACTIVITIES', []);
         return { success: true };
       }
-      
-      const friendIds = friendsData.map(friend => friend.friend_id);
-      
-      // Then get activities from those friends
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*, profiles:user_id(first_name, last_name)')
-        .in('user_id', friendIds)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      commit('SET_FRIEND_ACTIVITIES', data);
-      
+
+      const friendIds = friends.map(friend => friend.friend_id);
+
+      // In-memory: filter activities by friend IDs
+      const friendActivities = state.activities.filter(activity => friendIds.includes(activity.user_id));
+      commit('SET_FRIEND_ACTIVITIES', friendActivities);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -144,21 +123,20 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async fetchActivity({ commit }, activityId) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('id', activityId)
-        .single();
-      
-      if (error) throw error;
-      
-      commit('SET_SELECTED_ACTIVITY', data);
-      
+
+      // In-memory: find activity by ID
+      const activity = state.activities.find(activity => activity.id === activityId);
+
+      if (!activity) {
+        throw new Error('Activity not found');
+      }
+
+      commit('SET_SELECTED_ACTIVITY', activity);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -167,33 +145,26 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async createActivity({ commit, rootGetters }, activityData) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
+
       const userId = rootGetters['auth/currentUser']?.id;
-      
+
       if (!userId) {
         throw new Error('User not authenticated');
       }
-      
-      const { data, error } = await supabase
-        .from('activities')
-        .insert([
-          {
-            ...activityData,
-            user_id: userId,
-            created_at: new Date()
-          }
-        ])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      commit('ADD_ACTIVITY', data);
-      
+
+      // In-memory: create new activity
+      const newActivity = {
+        ...activityData,
+        user_id: userId,
+        created_at: new Date()
+      };
+
+      commit('ADD_ACTIVITY', newActivity);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -202,41 +173,36 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async updateActivity({ commit, rootGetters }, { activityId, activityData }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
+
       const userId = rootGetters['auth/currentUser']?.id;
-      
+
       if (!userId) {
         throw new Error('User not authenticated');
       }
-      
-      // Check if activity belongs to user
-      const { data: activityCheck, error: checkError } = await supabase
-        .from('activities')
-        .select('user_id')
-        .eq('id', activityId)
-        .single();
-      
-      if (checkError) throw checkError;
-      
-      if (activityCheck.user_id !== userId) {
+
+      // In-memory: check if activity belongs to user
+      const activity = state.activities.find(activity => activity.id === activityId);
+
+      if (!activity) {
+        throw new Error('Activity not found');
+      }
+
+      if (activity.user_id !== userId) {
         throw new Error('You can only update your own activities');
       }
-      
-      const { data, error } = await supabase
-        .from('activities')
-        .update(activityData)
-        .eq('id', activityId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      commit('UPDATE_ACTIVITY', data);
-      
+
+      // In-memory: update activity
+      const updatedActivity = {
+        ...activity,
+        ...activityData
+      };
+
+      commit('UPDATE_ACTIVITY', updatedActivity);
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -245,39 +211,31 @@ const actions = {
       commit('SET_LOADING', false, { root: true });
     }
   },
-  
+
   async deleteActivity({ commit, rootGetters }, activityId) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
+
       const userId = rootGetters['auth/currentUser']?.id;
-      
+
       if (!userId) {
         throw new Error('User not authenticated');
       }
-      
-      // Check if activity belongs to user
-      const { data: activityCheck, error: checkError } = await supabase
-        .from('activities')
-        .select('user_id')
-        .eq('id', activityId)
-        .single();
-      
-      if (checkError) throw checkError;
-      
-      if (activityCheck.user_id !== userId) {
+
+      // In-memory: check if activity belongs to user
+      const activity = state.activities.find(activity => activity.id === activityId);
+
+      if (!activity) {
+        throw new Error('Activity not found');
+      }
+
+      if (activity.user_id !== userId) {
         throw new Error('You can only delete your own activities');
       }
-      
-      const { error } = await supabase
-        .from('activities')
-        .delete()
-        .eq('id', activityId);
-      
-      if (error) throw error;
-      
+
+      // In-memory: delete activity
       commit('REMOVE_ACTIVITY', activityId);
-      
+
       return { success: true };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
@@ -285,6 +243,9 @@ const actions = {
     } finally {
       commit('SET_LOADING', false, { root: true });
     }
+  },
+  setNextActivityId({ commit }, nextId) {
+    commit('SET_NEXT_ACTIVITY_ID', nextId);
   }
 };
 

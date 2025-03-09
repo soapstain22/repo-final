@@ -1,9 +1,7 @@
-import { supabase } from '@/services/supabase';
-import jwtDecode from 'jwt-decode';
-
 const state = {
   user: null,
-  session: null
+  session: null,
+  users: [] // In-memory user storage
 };
 
 const getters = {
@@ -22,6 +20,9 @@ const mutations = {
   CLEAR_USER(state) {
     state.user = null;
     state.session = null;
+  },
+  ADD_USER(state, user) {
+    state.users.push(user);
   }
 };
 
@@ -29,31 +30,28 @@ const actions = {
   async register({ commit, dispatch }, { email, password, firstName, lastName }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      // Register user with Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password
-      });
-      
-      if (error) throw error;
-      
-      // Create user profile
-      if (data.user) {
-        await supabase.from('profiles').insert([
-          {
-            id: data.user.id,
-            first_name: firstName,
-            last_name: lastName,
-            email: email,
-            role: 'user',
-            created_at: new Date()
-          }
-        ]);
-        
-        // Set user in state
-        await dispatch('fetchUser', data.user.id);
+
+      // Check if user already exists
+      const existingUser = state.users.find(user => user.email === email);
+      if (existingUser) {
+        throw new Error('User already exists');
       }
+      
+      // Create new user
+      const newUser = {
+        id: Math.random().toString(36).substring(2, 15), // Generate a random ID
+        email,
+        password,
+        firstName,
+        lastName,
+        role: 'user',
+        createdAt: new Date()
+      };
+      
+      commit('ADD_USER', newUser);
+      
+      // Set user in state
+      await dispatch('fetchUser', newUser.id);
       
       return { success: true };
     } catch (error) {
@@ -64,26 +62,18 @@ const actions = {
     }
   },
   
-  async login({ commit, dispatch }, { email, password }) {
+  async login({ commit }, { email, password }) {
     try {
       commit('SET_LOADING', true, { root: true });
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // Find user in in-memory storage
+      const user = state.users.find(user => user.email === email && user.password === password);
       
-      if (error) throw error;
-      
-      if (data.session) {
-        commit('SET_SESSION', data.session);
-        
-        // Decode JWT to get user info
-        const decodedToken = jwtDecode(data.session.access_token);
-        
-        // Fetch user profile
-        await dispatch('fetchUser', decodedToken.sub);
+      if (!user) {
+        throw new Error('Invalid credentials');
       }
+      
+      commit('SET_USER', user);
       
       return { success: true };
     } catch (error) {
@@ -97,10 +87,6 @@ const actions = {
   async logout({ commit }) {
     try {
       commit('SET_LOADING', true, { root: true });
-      
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) throw error;
       
       commit('CLEAR_USER');
       
@@ -117,18 +103,14 @@ const actions = {
     try {
       commit('SET_LOADING', true, { root: true });
       
-      // Get user profile from profiles table
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Find user in in-memory storage
+      const user = state.users.find(user => user.id === userId);
       
-      if (error) throw error;
-      
-      if (data) {
-        commit('SET_USER', data);
+      if (!user) {
+        throw new Error('User not found');
       }
+      
+      commit('SET_USER', user);
       
       return { success: true };
     } catch (error) {
@@ -139,23 +121,8 @@ const actions = {
     }
   },
   
-  async initAuth({ commit, dispatch }) {
-    try {
-      // Get current session
-      const { data } = await supabase.auth.getSession();
-      
-      if (data.session) {
-        commit('SET_SESSION', data.session);
-        
-        // Decode JWT to get user info
-        const decodedToken = jwtDecode(data.session.access_token);
-        
-        // Fetch user profile
-        await dispatch('fetchUser', decodedToken.sub);
-      }
-    } catch (error) {
-      console.error('Auth initialization error:', error);
-    }
+  async initAuth() {
+    // No need to initialize auth from Supabase
   }
 };
 
