@@ -45,9 +45,12 @@ const login = async (email: string, password?: string): Promise<User | null> => 
   return null;
 };
 
-const register = async (name: string, email: string, password?: string): Promise<User | null> => {
+const register = async (name: string, email: string, password?: string): Promise<User | null | string> => {
   if (users.value.find((u) => u.email === email)) {
-    return null;
+    return "Email already registered";
+  }
+  if (!name || !email || !password) {
+    return "All fields are required";
   }
   const newUser: User = {
     id: users.value.length + 1,
