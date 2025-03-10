@@ -20,6 +20,9 @@ const mutations = {
   ADD_FRIEND(state, friend) {
     state.friends.push(friend);
   },
+  ADD_FRIENDS(state, friends) {
+    state.friendData.push(...friends);
+  },
   REMOVE_FRIEND(state, friendId) {
     state.friends = state.friends.filter(friend => friend.friend_id !== friendId);
   },
@@ -161,8 +164,7 @@ const actions = {
 
       state.friendData.push(newRequest);
       
-      // We don't add to friendRequests here since it's for incoming requests
-      // commit('ADD_FRIEND_REQUEST', newRequest);
+      commit('ADD_FRIEND_REQUEST', newRequest);
 
       return { success: true };
     } catch (error) {

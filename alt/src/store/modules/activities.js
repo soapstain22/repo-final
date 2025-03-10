@@ -31,6 +31,14 @@ const mutations = {
     state.activities.push(activity);
     state.userActivities.push(activity);
   },
+  ADD_ACTIVITIES(state, activities) {
+    activities.forEach(activity => {
+      activity.id = state.nextActivityId++;
+      state.activities.push(activity);
+      state.userActivities.push(activity);
+      state.activityData.push(activity);
+    });
+  },
   UPDATE_ACTIVITY(state, updatedActivity) {
     const index = state.activities.findIndex(activity => activity.id === updatedActivity.id);
     if (index !== -1) {
@@ -91,7 +99,7 @@ const actions = {
     }
   },
 
-  async fetchFriendActivities({ commit, rootGetters }) {
+  async fetchFriendActivities({ commit, rootGetters, rootState }, friendId) {
     try {
       commit('SET_LOADING', true, { root: true });
 
@@ -101,18 +109,15 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: get user's friends (replace with actual friend data retrieval)
-      const friends = []; // Replace with actual friend data
+      // Get the user_id from the users store
+      const friend = rootState.users.users.find(user => user.id === friendId);
 
-      if (!friends.length) {
-        commit('SET_FRIEND_ACTIVITIES', []);
-        return { success: true };
+      if (!friend) {
+        throw new Error('Friend not found');
       }
 
-      const friendIds = friends.map(friend => friend.friend_id);
-
-      // In-memory: filter activities by friend IDs
-      const friendActivities = state.activities.filter(activity => friendIds.includes(activity.user_id));
+      // In-memory: filter activities by friend ID
+      const friendActivities = state.activities.filter(activity => activity.user_id === friend.id);
       commit('SET_FRIEND_ACTIVITIES', friendActivities);
 
       return { success: true };

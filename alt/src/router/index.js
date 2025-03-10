@@ -50,6 +50,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/friends/:id',
+    name: 'FriendActivities',
+    component: () => import('@/views/FriendActivities.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: Admin,
