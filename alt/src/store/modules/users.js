@@ -5,7 +5,8 @@ const state = {
 
 const getters = {
   allUsers: state => state.users,
-  selectedUser: state => state.selectedUser
+  selectedUser: state => state.selectedUser,
+  getUserById: state => userId => state.users.find(user => user.id === userId)
 };
 
 const mutations = {
@@ -36,6 +37,27 @@ const actions = {
 
       // In-memory: get all users from auth state
       const users = rootState.auth.users;
+
+      // Add dummy accounts
+      rootState.auth.users.push({
+        id: 'funny',
+        email: 'funny@gmail.com',
+        password: 'password',
+        firstName: 'Funny',
+        lastName: 'User',
+        role: 'user',
+        created_at: new Date()
+      });
+
+      rootState.auth.users.push({
+        id: 'test',
+        email: 'test@gmail.gov',
+        password: 'password',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'user',
+        created_at: new Date()
+      });
 
       commit('SET_USERS', users);
 

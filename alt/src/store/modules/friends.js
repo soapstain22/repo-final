@@ -44,16 +44,27 @@ const actions = {
 
       // In-memory: filter friends by user ID and status
       const friends = state.friendData
-        .filter(friend => friend.user_id === userId && friend.status === 'accepted')
-        .map(friend => ({
-          ...friend,
-          profiles: {
-            id: friend.friend_id,
-            first_name: 'Friend', // Replace with actual friend data
-            last_name: 'Name',
-            email: 'friend@example.com'
-          }
-        }));
+        .filter(friend => (friend.user_id === userId || friend.friend_id === userId) && friend.status === 'accepted')
+        .map(friend => {
+          // If the current user is the friend_id, we need to display the user_id's info
+          const otherUserId = friend.user_id === userId ? friend.friend_id : friend.user_id;
+          const user = rootGetters['users/getUserById'](otherUserId);
+          return {
+            ...friend,
+            friend_id: otherUserId, // Ensure the friend_id is always the other user
+            profiles: user ? {
+              id: user.id,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email
+            } : {
+              id: otherUserId,
+              first_name: 'Unknown',
+              last_name: 'User',
+              email: ''
+            }
+          };
+        });
 
       commit('SET_FRIENDS', friends);
 
@@ -79,15 +90,23 @@ const actions = {
       // In-memory: filter friend requests by user ID and status
       const friendRequests = state.friendData
         .filter(request => request.friend_id === userId && request.status === 'pending')
-        .map(request => ({
-          ...request,
-          profiles: {
-            id: request.user_id,
-            first_name: 'Request', // Replace with actual user data
-            last_name: 'Sender',
-            email: 'sender@example.com'
-          }
-        }));
+        .map(request => {
+          const user = rootGetters['users/getUserById'](request.user_id);
+          return {
+            ...request,
+            profiles: user ? {
+              id: user.id,
+              first_name: user.first_name,
+              last_name: user.last_name,
+              email: user.email
+            } : {
+              id: request.user_id,
+              first_name: 'Unknown',
+              last_name: 'User',
+              email: ''
+            }
+          };
+        });
 
       commit('SET_FRIEND_REQUESTS', friendRequests);
 
@@ -110,23 +129,28 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: find user by email (replace with actual user data retrieval)
-      const friend = { id: 'friend123', email: friendEmail }; // Replace with actual user data
+      const allUsers = rootGetters['users/allUsers'];
+      const friend = allUsers.find(user => user.email === friendEmail);
 
       if (!friend) {
         throw new Error('User not found');
       }
 
-      // In-memory: check if friend request already exists
+      // Don't allow sending friend request to self
+      if (friend.id === userId) {
+        throw new Error('Cannot send friend request to yourself');
+      }
+
       const existingRequest = state.friendData.find(
-        request => request.user_id === userId && request.friend_id === friend.id
+        request =>
+          (request.user_id === userId && request.friend_id === friend.id) ||
+          (request.user_id === friend.id && request.friend_id === userId)
       );
 
       if (existingRequest) {
-        throw new Error('Friend request already sent');
+        throw new Error('Friend request already sent or friendship already exists');
       }
 
-      // In-memory: send friend request
       const newRequest = {
         id: Math.random().toString(36).substring(2, 15),
         user_id: userId,
@@ -136,7 +160,9 @@ const actions = {
       };
 
       state.friendData.push(newRequest);
-      commit('ADD_FRIEND_REQUEST', newRequest);
+      
+      // We don't add to friendRequests here since it's for incoming requests
+      // commit('ADD_FRIEND_REQUEST', newRequest);
 
       return { success: true };
     } catch (error) {
@@ -157,38 +183,39 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: get the friend request
-      const request = state.friendData.find(request => request.id === requestId);
-
-      if (!request) {
+      const requestIndex = state.friendData.findIndex(request => request.id === requestId);
+      
+      if (requestIndex === -1) {
         throw new Error('Friend request not found');
       }
+      
+      const request = state.friendData[requestIndex];
 
       if (request.friend_id !== userId) {
         throw new Error('You can only accept your own friend requests');
       }
 
-      // In-memory: update the friend request status
-      request.status = 'accepted';
-
-      // In-memory: create the reverse friendship
-      const reverseFriendship = {
-        id: Math.random().toString(36).substring(2, 15),
-        user_id: userId,
-        friend_id: request.user_id,
-        status: 'accepted',
-        created_at: new Date()
+      // Update the existing request instead of creating a new object
+      state.friendData[requestIndex] = {
+        ...request,
+        status: 'accepted'
       };
 
-      state.friendData.push(reverseFriendship);
-
+      const user = rootGetters['users/getUserById'](request.user_id);
       commit('ADD_FRIEND', {
         ...request,
-        profiles: {
+        status: 'accepted',
+        friend_id: request.user_id, // Set friend_id to the user who sent the request
+        profiles: user ? {
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email
+        } : {
           id: request.user_id,
-          first_name: 'Request', // Replace with actual user data
-          last_name: 'Sender',
-          email: 'sender@example.com'
+          first_name: 'Unknown',
+          last_name: 'User',
+          email: ''
         }
       });
       commit('REMOVE_FRIEND_REQUEST', requestId);
@@ -212,7 +239,6 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: get the friend request
       const request = state.friendData.find(request => request.id === requestId);
 
       if (!request) {
@@ -223,7 +249,6 @@ const actions = {
         throw new Error('You can only reject your own friend requests');
       }
 
-      // In-memory: delete the friend request
       state.friendData = state.friendData.filter(request => request.id !== requestId);
 
       commit('REMOVE_FRIEND_REQUEST', requestId);
@@ -247,9 +272,11 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: delete the friendship
       state.friendData = state.friendData.filter(
-        friend => !(friend.user_id === userId && friend.friend_id === friendId) && !(friend.user_id === friendId && friend.friend_id === userId)
+        friend => !(
+          (friend.user_id === userId && friend.friend_id === friendId) || 
+          (friend.user_id === friendId && friend.friend_id === userId)
+        )
       );
 
       commit('REMOVE_FRIEND', friendId);

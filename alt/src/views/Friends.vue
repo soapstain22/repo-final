@@ -52,8 +52,8 @@
                           </figure>
                         </div>
                         <div class="media-content">
-                          <p class="title is-5">{{ friend.profiles.first_name }} {{ friend.profiles.last_name }}</p>
-                          <p class="subtitle is-6">{{ friend.profiles.email }}</p>
+                          <p class="title is-5">{{ friend.profiles?.first_name }} {{ friend.profiles?.last_name }}</p>
+                          <p class="subtitle is-6">{{ friend.profiles?.email }}</p>
                         </div>
                       </div>
                     </div>
@@ -119,7 +119,7 @@
                           </figure>
                         </div>
                         <div class="media-content">
-                          <p class="title is-5">{{ activity.profiles.first_name }} {{ activity.profiles.last_name }}</p>
+                          <p class="title is-5">{{ activity.profiles?.first_name }} {{ activity.profiles?.last_name }}</p>
                           <p class="subtitle is-6">{{ formatDate(activity.created_at) }}</p>
                         </div>
                       </div>
@@ -212,8 +212,8 @@
                       </figure>
                     </div>
                     <div class="media-content">
-                      <p class="title is-5">{{ request.profiles.first_name }} {{ request.profiles.last_name }}</p>
-                      <p class="subtitle is-6">{{ request.profiles.email }}</p>
+                      <p class="title is-5">{{ request.profiles?.first_name }} {{ request.profiles?.last_name }}</p>
+                      <p class="subtitle is-6">{{ request.profiles?.email }}</p>
                     </div>
                   </div>
                   <div class="buttons mt-4">
@@ -299,13 +299,18 @@ export default {
       if (!searchQuery.value) {
         return friends.value;
       }
-      
+
       const query = searchQuery.value.toLowerCase();
       return friends.value.filter(friend => {
-        const fullName = `${friend.profiles.first_name} ${friend.profiles.last_name}`.toLowerCase();
+        let fullName = "";
+        let email = "";
+        if (friend.profiles) {
+          fullName = `${friend.profiles.first_name} ${friend.profiles.last_name}`.toLowerCase();
+          email = friend.profiles.email.toLowerCase();
+        }
         return (
           fullName.includes(query) ||
-          friend.profiles.email.toLowerCase().includes(query)
+          email.includes(query)
         );
       });
     });
@@ -383,7 +388,6 @@ export default {
         error.value = err.message || 'An unexpected error occurred';
       } finally {
         isSubmitting.value = false;
-        activeRequestId.value = null;
       }
     };
     
