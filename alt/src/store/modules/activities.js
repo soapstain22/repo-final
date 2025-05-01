@@ -1,3 +1,6 @@
+import { supabase } from "@/supabase";
+
+
 const state = {
   activities: [],
   selectedActivity: null,
@@ -26,33 +29,88 @@ const mutations = {
   SET_FRIEND_ACTIVITIES(state, activities) {
     state.friendActivities = activities;
   },
-  ADD_ACTIVITY(state, activity) {
-    activity.id = state.nextActivityId++; // Assign a unique ID
-    state.activities.push(activity);
-    state.userActivities.push(activity);
-  },
-  ADD_ACTIVITIES(state, activities) {
-    activities.forEach(activity => {
-      activity.id = state.nextActivityId++;
-      state.activities.push(activity);
-      state.userActivities.push(activity);
-      state.activityData.push(activity);
-    });
-  },
-  UPDATE_ACTIVITY(state, updatedActivity) {
-    const index = state.activities.findIndex(activity => activity.id === updatedActivity.id);
-    if (index !== -1) {
-      state.activities.splice(index, 1, updatedActivity);
-    }
+  async ADD_ACTIVITY(state, activity) {
+    console.log('Adding activity:', activity);
+    console.log(state);
+    
+    (activity);
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .insert([{
+          user_id: activity.user_id,
+          description: activity.description,
+          duration: activity.duration,
+          date: activity.date,
+          created_at: activity.created_at,
+          distance: activity.distance,
+          title: activity.title
+        }]);
 
-    const userIndex = state.userActivities.findIndex(activity => activity.id === updatedActivity.id);
-    if (userIndex !== -1) {
-      state.userActivities.splice(userIndex, 1, updatedActivity);
+      if (error) {
+        console.error('Error inserting activity:', error);
+        // Handle the error appropriately, e.g., by dispatching an error mutation
+      } else {
+        console.log('Activity inserted:', data);
+        // Optionally, update the local state with the new activity.
+        // state.activities.push(activity);
+        // state.userActivities.push(activity);
+      }
+    } catch (error) {
+      console.error('An unexpected error occurred:', error);
+      // Handle the error appropriately
     }
   },
-  REMOVE_ACTIVITY(state, activityId) {
-    state.activities = state.activities.filter(activity => activity.id !== activityId);
-    state.userActivities = state.userActivities.filter(activity => activity.id !== activityId);
+  async UPDATE_ACTIVITY(state, activity) {
+    console.log('Adding activity:', activity);
+    console.log(state);
+    
+    (activity);
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .update([{
+          user_id: activity.user_id,
+          description: activity.description,
+          duration: activity.duration,
+          date: activity.date,
+          created_at: activity.created_at,
+          distance: activity.distance,
+          title: activity.title
+        }]);
+
+      if (error) {
+        console.error('Error inserting activity:', error);
+        // Handle the error appropriately, e.g., by dispatching an error mutation
+      } else {
+        console.log('Activity inserted:', data);
+        // Optionally, update the local state with the new activity.
+        // state.activities.push(activity);
+        // state.userActivities.push(activity);
+      }
+    } catch (error) {
+      console.error('An unexpected error occurred:', error);
+      // Handle the error appropriately
+    }
+  },
+  async REMOVE_ACTIVITY(state, activityId) {
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', activityId);
+
+      if (error) {
+        console.error('Error deleting activity:', error);
+        // Handle the error appropriately, e.g., by dispatching an error mutation
+      } else {
+        console.log('Activity deleted');
+        state.userActivities = state.userActivities.filter(a => a.id !== activityId);
+      }
+    } catch (error) {
+      console.error('An unexpected error occurred:', error);
+      // Handle the error appropriately
+    }
   },
   SET_NEXT_ACTIVITY_ID(state, nextId) {
     state.nextActivityId = nextId;
@@ -83,12 +141,21 @@ const actions = {
       const userId = rootGetters['auth/currentUser']?.id;
 
       if (!userId) {
-        throw new Error('User not authenticated');
+      throw new Error('User not authenticated');
       }
 
-      // In-memory: filter activities by user ID
-      const userActivities = state.activities.filter(activity => activity.user_id === userId);
-      commit('SET_USER_ACTIVITIES', userActivities);
+      const { data: activities, error } = await supabase
+      .from('activities')
+      .select('*')
+      .eq('user_id', userId);
+
+      if (error) {
+      console.error('Error fetching user activities:', error);
+      commit('SET_ERROR', error.message, { root: true });
+      return { success: false, error: error.message };
+      }
+
+      commit('SET_USER_ACTIVITIES', activities);
 
       return { success: true };
     } catch (error) {
@@ -97,6 +164,7 @@ const actions = {
     } finally {
       commit('SET_LOADING', false, { root: true });
     }
+
   },
 
   async fetchFriendActivities({ commit, rootGetters, rootState }, friendId) {
@@ -152,6 +220,8 @@ const actions = {
   },
 
   async createActivity({ commit, rootGetters }, activityData) {
+    console.log(commit, rootGetters, activityData);
+    
     try {
       commit('SET_LOADING', true, { root: true });
 
