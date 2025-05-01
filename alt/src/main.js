@@ -86,4 +86,7 @@ app.use(Oruga);
 // Register FontAwesome component
 app.component('font-awesome-icon', FontAwesomeIcon);
 
+// Initialize authentication
+store.dispatch('auth/initAuth');
+
 app.mount('#app');

@@ -20,7 +20,7 @@
                     <font-awesome-icon icon="user-circle" size="8x" />
                   </span>
                 </figure>
-                <h2 class="title is-4">{{ currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User' }}</h2>
+                <h2 class="title is-4">{{ currentUser ? `${currentUser.user_metadata.firstName} ${currentUser.user_metadata.lastName}` : 'User' }}</h2>
                 <p class="subtitle is-6">{{ currentUser ? currentUser.email : '' }}</p>
                 <p class="tag is-primary">{{ currentUser ? currentUser.role : 'user' }}</p>
               </div>
@@ -166,29 +166,18 @@ export default {
         error.value = '';
         success.value = '';
 
-        const { firstName, lastName } = profileForm.value;
-        const id = currentUser.value.id;
-
-        const response = await fetch(`/backend/users/${id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ firstName, lastName })
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            firstName: profileForm.value.firstName,
+            lastName: profileForm.value.lastName
+          }
         });
 
-        if (!response.ok) {
-          const message = await response.json();
-          error.value = message.error || 'Failed to update name';
-          return;
+        if (updateError) {
+          error.value = updateError.message || 'Failed to update profile';
+        } else {
+          success.value = 'Profile updated successfully';
         }
-
-        const updatedUser = await response.json();
-
-        // Update the user's name in the store
-        store.commit('auth/updateCurrentUser', updatedUser);
-
-        success.value = 'Name updated successfully';
       } catch (err) {
         error.value = err.message || 'An unexpected error occurred';
       } finally {
