@@ -56,7 +56,7 @@
                 <span class="icon">
                   <i class="fas fa-user"></i>
                 </span>
-                <span>{{ currentUser ? currentUser.first_name : 'Profile' }}</span>
+                <span>{{ currentUser ? currentUser.firstName : 'Profile' }}</span>
               </router-link>
               <button class="button is-danger" @click="logout">
                 <span class="icon">

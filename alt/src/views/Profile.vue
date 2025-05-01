@@ -38,6 +38,46 @@
                   {{ success }}
                 </div>
 
+                <form @submit.prevent="updateName">
+                  <div class="field">
+                    <label class="label">First Name</label>
+                    <div class="control">
+                      <input
+                        v-model="profileForm.firstName"
+                        class="input"
+                        type="text"
+                        placeholder="First Name"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <label class="label">Last Name</label>
+                    <div class="control">
+                      <input
+                        v-model="profileForm.lastName"
+                        class="input"
+                        type="text"
+                        placeholder="Last Name"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <div class="control">
+                      <button
+                        type="submit"
+                        class="button is-primary"
+                        :class="{ 'is-loading': isUpdatingName }"
+                      >
+                        Update Name
+                      </button>
+                    </div>
+                  </div>
+                </form>
+
                 <form @submit.prevent="changePassword">
                   <div class="field">
                     <label class="label">New Password</label>
@@ -118,6 +158,44 @@ export default {
       confirmPassword: ''
     });
 
+    const isUpdatingName = ref(false);
+
+    const updateName = async () => {
+      try {
+        isUpdatingName.value = true;
+        error.value = '';
+        success.value = '';
+
+        const { firstName, lastName } = profileForm.value;
+        const id = currentUser.value.id;
+
+        const response = await fetch(`/backend/users/${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ firstName, lastName })
+        });
+
+        if (!response.ok) {
+          const message = await response.json();
+          error.value = message.error || 'Failed to update name';
+          return;
+        }
+
+        const updatedUser = await response.json();
+
+        // Update the user's name in the store
+        store.commit('auth/updateCurrentUser', updatedUser);
+
+        success.value = 'Name updated successfully';
+      } catch (err) {
+        error.value = err.message || 'An unexpected error occurred';
+      } finally {
+        isUpdatingName.value = false;
+      }
+    };
+
     const changePassword = async () => {
       try {
         isChangingPassword.value = true;
@@ -168,8 +246,7 @@ export default {
         } else {
           profileForm.value = {
             firstName: user.user_metadata.firstName || '',
-            lastName: user.user_metadata.lastName || '',
-            email: user.email || ''
+            lastName: user.user_metadata.lastName || ''
           };
         }
       } catch (err) {
@@ -189,7 +266,9 @@ export default {
       passwordError,
       passwordSuccess,
       isChangingPassword,
-      changePassword
+      changePassword,
+      updateName,
+      isUpdatingName
     };
   }
 };
