@@ -224,6 +224,7 @@
 </template>
 
 <script>
+import { supabase } from '@/supabase';
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 
@@ -320,6 +321,7 @@ export default {
     const confirmDelete = (activity) => {
       selectedActivity.value = activity;
       isDeleteModalActive.value = true;
+      
     };
     
     const closeDeleteModal = () => {
@@ -373,16 +375,14 @@ export default {
     };
     
     const deleteActivity = async () => {
+      closeDeleteModal();
       try {
-        isSubmitting.value = true;
-        
-        const result = await store.dispatch('activities/deleteActivity', selectedActivity.value.id);
-        
-        if (result.success) {
-          closeDeleteModal();
-        } else {
-          error.value = result.error || 'Failed to delete activity';
-        }
+      const { data, error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', selectedActivity.value.id);
+        console.log(data);
+        console.log(error);
       } catch (err) {
         error.value = err.message || 'An unexpected error occurred';
       } finally {
