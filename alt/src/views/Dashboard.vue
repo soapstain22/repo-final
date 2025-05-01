@@ -6,7 +6,7 @@
       <div class="columns">
         <div class="column is-8">
           <div class="box">
-            <h2 class="title is-4">Welcome, {{ currentUser ? currentUser.first_name : 'User' }}!</h2>
+            <h2 class="title is-4">Welcome, {{ currentUser ? currentUser.user_metadata.firstName : 'User' }}!</h2>
             <p class="subtitle">Here's your fitness summary</p>
             
             <div class="columns is-multiline mt-4">

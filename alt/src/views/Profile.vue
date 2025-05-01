@@ -176,7 +176,7 @@ export default {
         if (updateError) {
           error.value = updateError.message || 'Failed to update profile';
         } else {
-          success.value = 'Profile updated successfully';
+          success.value = 'Profile updated successfully. Refresh to see changes.';
         }
       } catch (err) {
         error.value = err.message || 'An unexpected error occurred';
