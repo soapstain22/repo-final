@@ -5,11 +5,11 @@
         <div class="column is-6-tablet is-5-desktop is-4-widescreen">
           <div class="box">
             <h1 class="title has-text-centered">Login</h1>
-            
+
             <div v-if="error" class="notification is-danger">
               {{ error }}
             </div>
-            
+
             <form @submit.prevent="handleLogin">
               <div class="field">
                 <label class="label">Email</label>
@@ -26,7 +26,7 @@
                   </span>
                 </div>
               </div>
-              
+
               <div class="field">
                 <label class="label">Password</label>
                 <div class="control has-icons-left">
@@ -42,7 +42,7 @@
                   </span>
                 </div>
               </div>
-              
+
               <div class="field">
                 <div class="control">
                   <button
@@ -55,7 +55,7 @@
                 </div>
               </div>
             </form>
-            
+
             <div class="has-text-centered mt-4">
               <p>
                 Don't have an account?
@@ -79,22 +79,27 @@ export default {
   setup() {
     const store = useStore();
     const router = useRouter();
-    
+
     const email = ref('');
     const password = ref('');
     const error = ref('');
-    
+
     const isLoading = computed(() => store.getters.isLoading);
-    
+
+    // Redirect to dashboard if already logged in
+    if (store.getters['auth/isAuthenticated']) {
+      router.push('/dashboard');
+    }
+
     const handleLogin = async () => {
       try {
         error.value = '';
-        
+
         const result = await store.dispatch('auth/login', {
           email: email.value,
           password: password.value
         });
-        
+
         if (result.success) {
           router.push('/dashboard');
         } else {
@@ -104,7 +109,7 @@ export default {
         error.value = err.message || 'An unexpected error occurred.';
       }
     };
-    
+
     return {
       email,
       password,

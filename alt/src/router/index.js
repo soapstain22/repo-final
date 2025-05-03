@@ -80,7 +80,8 @@ const router = createRouter({
 });
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  await store.dispatch('auth/initAuth');
   const isAuthenticated = store.getters['auth/isAuthenticated'];
   const isAdmin = store.getters['auth/isAdmin'];
 
