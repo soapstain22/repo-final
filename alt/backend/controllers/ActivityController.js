@@ -3,6 +3,8 @@ import { canAccessActivity } from '../policies/policies';
 
 export default class ActivityController {
   static async create(req, res) {
+    console.log("create",req,res);
+
     try {
       const { userId, description, duration, date } = req.body;
       // Assuming req.user is populated by middleware with the authenticated user
@@ -21,6 +23,8 @@ export default class ActivityController {
   }
 
   static async get(req, res) {
+    console.log("get",req,res);
+
     try {
       const { id } = req.params;
       // Assuming req.user is populated by middleware with the authenticated user
@@ -43,6 +47,8 @@ export default class ActivityController {
   }
 
   static async getAll(req, res) {
+    console.log("getAll",req,res);
+
     try {
       const { userId } = req.params;
       // Assuming req.user is populated by middleware with the authenticated user
@@ -61,6 +67,8 @@ export default class ActivityController {
   }
 
   static async update(req, res) {
+    console.log("update",req,res);
+    
     try {
       const { id } = req.params;
       const { description, duration, date } = req.body;
@@ -85,6 +93,8 @@ export default class ActivityController {
   }
 
   static async delete(req, res) {
+    console.log("delete",req,res);
+
     try {
       const { id } = req.params;
       // Assuming req.user is populated by middleware with the authenticated user

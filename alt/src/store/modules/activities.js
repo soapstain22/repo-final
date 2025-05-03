@@ -250,6 +250,7 @@ const actions = {
   },
 
   async updateActivity({ commit, rootGetters }, { activityId, activityData }) {
+    console.log(commit, rootGetters, activityId, activityData);
     try {
       commit('SET_LOADING', true, { root: true });
 
@@ -259,26 +260,29 @@ const actions = {
         throw new Error('User not authenticated');
       }
 
-      // In-memory: check if activity belongs to user
-      const activity = state.activities.find(activity => activity.id === activityId);
+      const updateData = { ...activityData };
 
-      if (!activity) {
+      const { data, error } = await supabase
+        .from('activities')
+        .update(updateData)
+        .eq('id', activityId)
+        .select();
+
+      if (error) {
+        console.error('Error updating activity:', error);
+        commit('SET_ERROR', error.message, { root: true });
+        return { success: false, error: error.message };
+      }
+
+      if (!data || data.length === 0) {
         throw new Error('Activity not found');
       }
 
-      if (activity.user_id !== userId) {
-        throw new Error('You can only update your own activities');
-      }
+      commit('SET_SELECTED_ACTIVITY', data[0]);
+      commit('SET_USER_ACTIVITIES', state.userActivities.map(activity => activity.id === activityId ? data[0] : activity));
+      commit('SET_ACTIVITIES', state.activities.map(activity => activity.id === activityId ? data[0] : activity));
 
-      // In-memory: update activity
-      const updatedActivity = {
-        ...activity,
-        ...activityData
-      };
-
-      commit('UPDATE_ACTIVITY', updatedActivity);
-
-      return { success: true };
+      return { success: true, data: data[0] };
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true });
       return { success: false, error: error.message };

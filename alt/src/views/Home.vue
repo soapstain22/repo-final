@@ -12,6 +12,12 @@
                 Log activities, connect with friends, and achieve your goals
               </h2>
               <div class="buttons are-large mt-6">
+                <router-link v-if="isLoggedIn" to="/dashboard" class="button is-success is-large">
+                          <span>Go to Dashboard</span>
+                          <span class="icon">
+                          <font-awesome-icon icon="tachometer-alt" />
+                          </span>
+                        </router-link>
                 <router-link to="/register" class="button is-light is-outlined">
                   <span>Get Started</span>
                   <span class="icon">
