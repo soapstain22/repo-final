@@ -73,13 +73,13 @@
                     <div v-else>
                       <div class="columns is-multiline">
                         <div class="column is-6">
-                          <div class="box has-background-primary-light">
+                          <div class="box has-background-info-dark">
                             <p class="heading has-text-centered">Total Activities</p>
                             <p class="title has-text-centered">{{ userActivities.length }}</p>
                           </div>
                         </div>
                         <div class="column is-6">
-                          <div class="box has-background-info-light">
+                          <div class="box has-background-primary-dark">
                             <p class="heading has-text-centered">This Week</p>
                             <p class="title has-text-centered">{{ activitiesThisWeek }}</p>
                           </div>
